@@ -1,0 +1,2 @@
+# Proyecto2_OpenMPI
+ 
