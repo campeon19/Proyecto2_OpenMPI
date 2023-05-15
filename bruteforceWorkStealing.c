@@ -130,6 +130,7 @@ int main(int argc, char **argv)
             if (tryKey(i, cipher, ciphlen))
             {
                 found = i;
+                end_time = MPI_Wtime();  // tiempo de finalizacion
                 printf("Process %d found the key\n", id);
                 for (int node = 0; node < N; node++)
                 {
@@ -160,7 +161,6 @@ int main(int argc, char **argv)
     }
     printf("Process %d exiting\n", id);
 
-    end_time = MPI_Wtime();
     double elapsed_time = end_time - start_time;
 
     double max_elapsed_time;
