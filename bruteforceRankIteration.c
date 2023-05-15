@@ -82,20 +82,18 @@ uint64_t the_key = 12L;
 int main(int argc, char *argv[]) {
   if (argc != 3)
   {
-        fprintf(stderr, "Uso: %s <nombre_archivo> <llave_privada>\n", argv[0]);
-        exit(EXIT_FAILURE);
+    fprintf(stderr, "Uso: %s <nombre_archivo> <llave_privada>\n", argv[0]);
+    exit(EXIT_FAILURE);
   }
 
   const char *filename = argv[1];
   long the_key = strtol(argv[2], NULL, 10);
-  double start_time, end_time;
-
 
   int N, id;
   uint64_t upper = (1ULL << 56); // upper bound DES keys 2^56
   MPI_Status st;
   MPI_Request req;
-
+  double start_time, end_time; // Declare the variables to hold the start and end times
 
   char *eltexto = read_file(filename);
   int ciphlen = strlen(eltexto);
@@ -112,21 +110,22 @@ int main(int argc, char *argv[]) {
   MPI_Comm_size(comm, &N);
   MPI_Comm_rank(comm, &id);
 
-  
   uint64_t found = 0;
   int ready = 0;
 
   printf("Process %d starting\n", id);
 
-  // Non-blocking receive, check in the loop if someone already found it
+  
   MPI_Irecv(&found, 1, MPI_LONG, MPI_ANY_SOURCE, MPI_ANY_TAG, comm, &req);
 
+  start_time = MPI_Wtime(); // tiempo inicial del calculo
   for (uint64_t i = id; i < upper; i+=N) {
     MPI_Test(&req, &ready, MPI_STATUS_IGNORE);
     if (ready)
       break;
 
     if (tryKey(i, cipher, ciphlen)) {
+      end_time = MPI_Wtime(); // Time it takes for the process to find the key
       found = i;
       printf("Process %d found the key\n", id);
       for (int node = 0; node < N; node++) {
@@ -136,15 +135,17 @@ int main(int argc, char *argv[]) {
     }
   }
 
+¿
+  if (id == 0) {
+    printf("Time taken to find the key: %f seconds\n", end_time - start_time);
+  }
+
   // Wait and then print the text
   if (id == 0) {
     MPI_Wait(&req, &st);
     decrypt(found, cipher, ciphlen);
     printf("Key = %llu\n\n", found);
-    printf("Decrypted text (in hexadecimal):\n");
-    for (int i = 0; i < ciphlen; ++i) {
-        printf("%02x ", (unsigned char)cipher[i]);
-    }
+    
     printf("\n\n");
     printf("Original text:\n%s\n", eltexto);
     printf("Decrypted text:\n%s\n", cipher);
@@ -154,6 +155,6 @@ int main(int argc, char *argv[]) {
   // Finalize MPI environment
   MPI_Finalize();
   free(eltexto);
-
 }
+
 
