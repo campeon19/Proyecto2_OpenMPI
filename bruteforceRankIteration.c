@@ -14,6 +14,36 @@
 #include <openssl/des.h>	//OJO: utilizar otra libreria de no poder con esta
 #include <stdint.h>
 
+
+
+char *read_file(const char *filename)
+{
+    FILE *file = fopen(filename, "r");
+    if (!file)
+    {
+        perror("Error abriendo el archivo");
+        exit(EXIT_FAILURE);
+    }
+
+    fseek(file, 0, SEEK_END);
+    long file_size = ftell(file);
+    fseek(file, 0, SEEK_SET);
+
+    char *file_contents = (char *)malloc(file_size + 1);
+    if (!file_contents)
+    {
+        perror("Error reservando memoria");
+        exit(EXIT_FAILURE);
+    }
+
+    fread(file_contents, 1, file_size, file);
+    file_contents[file_size] = '\0';
+
+    fclose(file);
+    return file_contents;
+}
+
+
 //descifra un texto dado una llave
 void decrypt(uint64_t key, char *ciph, int len) {
   DES_key_schedule ks;
@@ -50,11 +80,24 @@ uint64_t the_key = 12L;
 //uint64_t the_key = 18014398509481983L;
 //long the_key = 18014398509481983L +1L;
 int main(int argc, char *argv[]) {
+  if (argc != 3)
+  {
+        fprintf(stderr, "Uso: %s <nombre_archivo> <llave_privada>\n", argv[0]);
+        exit(EXIT_FAILURE);
+  }
+
+  const char *filename = argv[1];
+  long the_key = strtol(argv[2], NULL, 10);
+  double start_time, end_time;
+
+
   int N, id;
   uint64_t upper = (1ULL << 56); // upper bound DES keys 2^56
   MPI_Status st;
   MPI_Request req;
 
+
+  char *eltexto = read_file(filename);
   int ciphlen = strlen(eltexto);
   MPI_Comm comm = MPI_COMM_WORLD;
 
@@ -69,6 +112,7 @@ int main(int argc, char *argv[]) {
   MPI_Comm_size(comm, &N);
   MPI_Comm_rank(comm, &id);
 
+  
   uint64_t found = 0;
   int ready = 0;
 
@@ -109,5 +153,7 @@ int main(int argc, char *argv[]) {
 
   // Finalize MPI environment
   MPI_Finalize();
+  free(eltexto);
+
 }
 
