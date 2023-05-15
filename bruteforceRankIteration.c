@@ -125,7 +125,7 @@ int main(int argc, char *argv[]) {
       break;
 
     if (tryKey(i, cipher, ciphlen)) {
-      end_time = MPI_Wtime(); // Time it takes for the process to find the key
+      
       found = i;
       printf("Process %d found the key\n", id);
       for (int node = 0; node < N; node++) {
@@ -135,8 +135,8 @@ int main(int argc, char *argv[]) {
     }
   }
 
-¿
   if (id == 0) {
+    end_time = MPI_Wtime(); // Time it takes for the process to find the key
     printf("Time taken to find the key: %f seconds\n", end_time - start_time);
   }
 
